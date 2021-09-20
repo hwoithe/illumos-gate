@@ -20,6 +20,7 @@
  */
 /*
  * Copyright (c) 2006, 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2021 Nokia
  */
 
 #include <sys/kmem.h>
@@ -251,9 +252,12 @@ brand_register_zone(struct brand_attr *attr)
 		 * module and search the list again.
 		 */
 		modname = kmem_alloc(MAXPATHLEN, KM_SLEEP);
-		(void) strcpy(modname, "brand/");
-		(void) strcat(modname, attr->ba_modname);
-		hdl = ddi_modopen(modname, KRTLD_MODE_FIRST, &err);
+		(void) strlcpy(modname, "brand/", MAXPATHLEN);
+		if (strlcat(modname, attr->ba_modname,
+		    MAXPATHLEN) < MAXPATHLEN)
+			hdl = ddi_modopen(modname, KRTLD_MODE_FIRST, &err);
+		else
+			err = EOVERFLOW;
 		kmem_free(modname, MAXPATHLEN);
 
 		if (err != 0)
